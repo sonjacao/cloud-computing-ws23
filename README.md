@@ -45,7 +45,7 @@ But since many contributors had shared their dashboard configurations online, we
 
 ![](assets/dashboard-node.png)
 
-#### PostgreSQL Dashboard
+#### Postgres Dashboard
 
 ![](assets/dashboard-postgres.png)
 
