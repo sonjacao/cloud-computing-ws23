@@ -1,0 +1,158 @@
+version: "3"
+
+x-ecs-default: &ecs-default
+  ECS_PROD: true
+  ECS_DOMAIN: localhost
+  DATABASE_URL: postgres://ecs:ecs@database:5432/ecs
+  REDIS_URL: redis://redis:6379/0
+  ECS_COMMISSION_UUID: ecececececececececececececececec
+  ECS_REQUIRE_CLIENT_CERTS: false
+  ECS_USERSWITCHER_ENABLED: true
+  ECS_EMAIL_ENABLED: false
+  ECS_DISABLE_REGISTER: false
+  ECS_LOG_LEVEL: WARNING
+  ECS_SECRET_KEY: secret
+  ECS_REGISTRATION_SECRET: secret
+  ECS_PASSWORD_RESET_SECRET: secret
+
+services:
+  #####################
+  # Postgres Database #
+  #####################
+
+  database:
+    image: postgres:15-alpine
+    container_name: ecs_database
+    restart: always
+    environment:
+      POSTGRES_USER: ecs
+      POSTGRES_PASSWORD: ecs
+      POSTGRES_DATABASE: ecs
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    command: postgres -c jit=off
+    shm_size: 1024m
+
+  database-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: postgresql://ecs:ecs@database:5432/ecs?sslmode=disable
+
+  reverse-proxy:
+    image: traefik:v2.8
+    container_name: ecs_reverse-proxy
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web-grafana.address=:3000"
+      - "--entrypoints.web-alertmanager.address=:9093"
+      - "--global.sendAnonymousUsage=false"
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "80:80"
+      - "8080:8080"
+      - "3000:3000"
+
+  #######
+  # ECS #
+  #######
+
+  ecs.web:
+    image: ghcr.io/programmierfabrik/ecs:feature-prometheus-monitoring
+    container_name: ecs_web
+    restart: always
+    environment:
+      <<: *ecs-default
+    volumes:
+      - ecs_data:/opt/ecs/data
+    labels:
+      - "traefik.http.routers.ecs-web.entryPoints=web"
+      - "traefik.http.routers.ecs-web.rule=Host(`localhost`)"
+    command: daphne -b 0.0.0.0 --proxy-headers ecs.asgi:application
+    depends_on:
+      - database
+      - redis
+
+  ecs.worker:
+    image: ghcr.io/programmierfabrik/ecs:feature-prometheus-monitoring
+    container_name: ecs_worker
+    restart: always
+    environment:
+      <<: *ecs-default
+    volumes:
+      - ecs_data:/opt/ecs/data
+    command: celery -A ecs worker -l warning
+    depends_on:
+      - ecs.web
+      - redis
+
+  ecs.beat:
+    image: ghcr.io/programmierfabrik/ecs:feature-prometheus-monitoring
+    container_name: ecs_beat
+    restart: always
+    environment:
+      <<: *ecs-default
+    command: celery -A ecs beat -l warning
+    depends_on:
+      - ecs.web
+      - redis
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: ecs_redis
+    restart: always
+
+  redis-exporter:
+    image: oliver006/redis_exporter
+    environment:
+      REDIS_ADDR: redis://redis:6379
+
+  ##############
+  # Monitoring #
+  ##############
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    # TODO: remove env
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    labels:
+      - "traefik.http.routers.grafana-web.entryPoints=web-grafana"
+      - "traefik.http.routers.grafana-web.rule=Host(`localhost`)"
+    volumes:
+      - ./grafana-provisioning:/etc/grafana/provisioning/
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    labels:
+      - "traefik.http.routers.alertmanager-web.entryPoints=web-alertmanager"
+      - "traefik.http.routers.alertmanager-web.rule=Host(`localhost`)"
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.rootfs=/rootfs"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+
+volumes:
+  db_data:
+  ecs_data:
+  prometheus_data:
