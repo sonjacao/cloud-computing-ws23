@@ -14,13 +14,13 @@ This should start everything. The first time the `ECS` will take a while to star
 docker-compose up -d
 ```
 
-All you need to do is register yourself (http://localhost/accounts/register/)[here] and look at the console for the link:
+All you need to do is register yourself [here](http://localhost/accounts/register/) and look at the console for the link:
 
 ```
 docker-compose logs -f ecs.web
 ```
 
-Now you can observe everything in (http://localhost:3000)[Grafana]
+Now you can observe everything in [Grafana](http://localhost:3000)
 
 ## Reflection
 
