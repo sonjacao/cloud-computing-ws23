@@ -1,4 +1,4 @@
-# Explore Prometheus & Grafana to observer your application
+# Explore Prometheus & Grafana to observe your application
 
 ## Definition
 
@@ -6,14 +6,14 @@ The [ECS](https://github.com/programmierfabrik/ecs) is an open-source software r
 
 ## Milestones
 
-- [ ] Set up Prometheus
-- [ ] Expose metric endpoints and scrape metrics via Prometheus
-    - [ ] Database
-    - [ ] Django
-    - [ ] Traffic
-- [ ] Set up Grafana
-    - [ ] Custom queries and their evaluation
-- [ ] Set up alert and simulate
+- [x] Set up Prometheus
+- [x] Expose metric endpoints and scrape metrics via Prometheus
+    - [x] Database
+    - [x] Django
+    - [x] Traffic
+- [x] Set up Grafana
+    - [x] Custom queries and their evaluation
+- [x] Set up alert and simulate
 
 ## Task Division
 

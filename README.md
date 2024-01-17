@@ -37,6 +37,22 @@ Integrating Django was also a smooth process, thanks to the django-prometheus li
 Next, we focused on setting up Grafana. While the basic operation of Grafana requires minimal configuration, we faced some challenges during the dashboard provisioning phase. The extensive documentation of Grafana, which is of similar length to that of Prometheus', initially slowed us down.
 But since many contributors had shared their dashboard configurations online, we were able to get a good insight into a couple ready-to-use solutions. This realization led us to adopt the approach of not "reinventing the wheel," especially considering the high quality of these existing implementations.Ultimately, we successfully imported these dashboards at startup. However, we encountered issues with the datasource references within the dashboards, which required additional affort.
 
+#### Django Dashboard
+
+![](assets/dashboard-django.png)
+
+#### Node Dashboard
+
+![](assets/dashboard-node.png)
+
+#### PostgreSQL Dashboard
+
+![](assets/dashboard-postgres.png)
+
+#### Redis Dashboard
+
+![](assets/dashboard-redis.png)
+
 ### Adding Additional Exporters:
 
 Following these setups, we proceeded to incrementally add new exporters, integrating them one at a time.
